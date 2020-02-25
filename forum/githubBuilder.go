@@ -13,6 +13,7 @@ type GithubBuilder struct {
 	RepositoryOwner string
 	RepositoryName string
 	IssueLabels *[]string
+	Resolutions []string
 }
 
 func NewGithubBuilder() *GithubBuilder {
@@ -40,6 +41,7 @@ func (g *GithubBuilder) Build() (*Forum, error) {
 	}
 	ctx := context.Background()
 	client := github.NewClient(createAuthClient(ctx, g.AccessToken))
+
 	var githubForum Forum
 	githubForum = &Github{
 		ctx: ctx,

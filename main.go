@@ -18,16 +18,24 @@ func main() {
 	builder := moderator.NewModeratorBuilder()
 	builder.SetForumBuilder(githubBuilder)
 	builder.SetModerators("henrymxu")
+	_ = builder.SetResolutions("pass", "fail")
+	builder.RegisterActionHandler(actionHandler)
+	builder.SetModeToCommenting()
 	_ = builder.SetTitleFormat("Action required for %d")
 	mod, err := builder.BuildModerator()
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
-	fmt.Println(mod.DoesActionAlreadyExist(1))
-	//err = mod.CreateAction(0, "Test Issue for GoSports using GoModerator")
+	fmt.Println(mod.DoesActionAlreadyExist(0))
+	//err = mod.CreateAction(1, "Test Issue for GoSports using GoModerator")
 	//if err != nil {
 	//	fmt.Println(err)
 	//	panic(err)
 	//}
+	mod.StartActionsPollingService()
+}
+
+func actionHandler(id int64, resolution string) {
+	fmt.Printf("Handling action for %d with resolution %s\n", id, resolution)
 }

@@ -10,15 +10,22 @@ import (
 	"time"
 )
 
+const (
+	votingMode = "voting"
+	commentingMode = "commenting"
+)
+
 type ActionHandlerFunc func(id int64, resolution string)
 
 type Moderator struct {
-	ctx            context.Context
-	forum          *forum.Forum
-	actionCache    map[int64]struct{}
-	actionHandlers map[string]*ActionHandlerFunc
-	moderators     map[string]struct{}
-	titleFormat    string
+	ctx           context.Context
+	forum         *forum.Forum
+	moderators    map[string]struct{}
+	resolutions   map[string]struct{}
+	actionCache   map[int64]struct{}
+	actionHandler *ActionHandlerFunc
+	titleFormat   string
+	mode string
 }
 
 // CreateAction attempts to create a moderator action based on a unique ID.
@@ -33,9 +40,14 @@ func (m *Moderator) CreateAction(id int64, body string) error {
 		Title: title,
 		Body:  body,
 	}
-	err := (*m.forum).CreateAction(action)
+	actionId, err := (*m.forum).CreateAction(action)
 	if err != nil {
 		return err
+	}
+	if m.mode == votingMode {
+		for resolution := range m.resolutions {
+			_ = (*m.forum).PostComment(resolution, actionId)
+		}
 	}
 	m.actionCache[id] = struct{}{}
 	return nil
@@ -66,7 +78,7 @@ func (m *Moderator) DoesActionAlreadyExist(id int64) bool {
 	return result
 }
 
-func (m *Moderator) PollActions() {
+func (m *Moderator) StartActionsPollingService() {
 	go m.actionHandlerService()
 }
 
@@ -96,16 +108,18 @@ func (m *Moderator) handleNewlyResolvedActions(timestamp time.Time) {
 		if err != nil {
 			continue
 		}
-		for _, comment := range comments {
-			if _, ok := m.moderators[comment.User]; ok {
-				if resolution, ok := (*m.forum).GetResolution(comment); ok {
-					actionHandler := *m.actionHandlers[resolution]
-					if actionHandler != nil {
-						if err := (*m.forum).CloseAction(action.ID); err == nil {
-							if id, err := parseItemIdFromAction(action.Title, m.titleFormat); err == nil {
-								actionHandler(id, resolution)
-							}
-						}
+		var resolution string
+		var ok bool
+		if m.mode == votingMode {
+			resolution, ok = (*m.forum).GetVotingResolution(comments)
+		} else if m.mode == commentingMode {
+			resolution, ok = (*m.forum).GetCommentatingResolution(comments, m.resolutions, m.moderators)
+		}
+		if ok {
+			if m.actionHandler != nil {
+				if err := (*m.forum).CloseAction(action.ID); err == nil {
+					if id, err := parseItemIdFromAction(action.Title, m.titleFormat); err == nil {
+						(*m.actionHandler)(id, resolution)
 					}
 				}
 			}

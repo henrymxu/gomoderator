@@ -8,11 +8,13 @@ import (
 )
 
 type Forum interface {
-	GetResolution(comment *Comment) (string, bool)
-	CloseAction(id int64) error
-	CreateAction(action *Action) error
+	GetVotingResolution(comments []*Comment) (string, bool)
+	GetCommentatingResolution(comments []*Comment, resolutions map[string]struct{}, moderators map[string]struct{}) (string, bool)
+	CloseAction(number int) error
+	CreateAction(action *Action) (int, error)
 	GetActions(state string, timestamp time.Time) ([]*Action, error)
 	GetNewComments(action *Action, timestamp time.Time) ([]*Comment, error)
+	PostComment(body string, id int) error
 }
 
 type Builder interface {
@@ -20,7 +22,7 @@ type Builder interface {
 }
 
 type Action struct {
-	ID        int64
+	ID        int
 	Title     string
 	Body      string
 	User      string

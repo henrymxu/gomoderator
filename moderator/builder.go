@@ -11,6 +11,9 @@ type Builder struct {
 	forumBuilder *forum.Builder
 	titleFormat  string
 	moderators   []string
+	actionHandler *ActionHandlerFunc
+	resolutions []string
+	mode string
 }
 
 func NewModeratorBuilder() *Builder {
@@ -33,6 +36,26 @@ func (m *Builder) SetModerators(mods ...string) {
 	m.moderators = mods
 }
 
+func (m *Builder) SetResolutions(resolutions ...string) error {
+	if len(resolutions) < 2 {
+		return errors.New("moderator must contain at least 2 resolutions")
+	}
+	m.resolutions = resolutions
+	return nil
+}
+
+func (m *Builder) SetModeToVoting() {
+	m.mode = votingMode
+}
+
+func (m *Builder) SetModeToCommenting() {
+	m.mode = commentingMode
+}
+
+func (m *Builder) RegisterActionHandler(handler ActionHandlerFunc) {
+	m.actionHandler = &handler
+}
+
 func (m *Builder) BuildModerator() (*Moderator, error) {
 	if m.titleFormat == "" {
 		return nil, errors.New("moderator must contain a title format")
@@ -42,6 +65,12 @@ func (m *Builder) BuildModerator() (*Moderator, error) {
 	}
 	if m.forumBuilder == nil {
 		return nil, errors.New("moderator must contain a forum builder")
+	}
+	if m.resolutions == nil {
+		return nil, errors.New("moderator must contain at least 2 resolutions")
+	}
+	if m.mode == "" {
+		return nil, errors.New("moderator must specify a mode")
 	}
 	return buildModerator(m)
 }
@@ -56,10 +85,16 @@ func buildModerator(builder *Builder) (*Moderator, error) {
 	for _, moderator := range builder.moderators {
 		moderatorsMap[moderator] = struct{}{}
 	}
+	resolutionsMap := make(map[string]struct{})
+	for _, resolution := range builder.resolutions {
+		resolutionsMap[resolution] = struct{}{}
+	}
 	moderator := Moderator{
 		ctx:         ctx,
 		forum:       builtForum,
 		moderators:  moderatorsMap,
+		resolutions: resolutionsMap,
+		actionHandler: builder.actionHandler,
 		titleFormat: builder.titleFormat,
 	}
 	return &moderator, nil
