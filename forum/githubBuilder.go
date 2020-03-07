@@ -13,7 +13,6 @@ type GithubBuilder struct {
 	RepositoryOwner string
 	RepositoryName string
 	IssueLabels *[]string
-	Resolutions []string
 }
 
 func NewGithubBuilder() *GithubBuilder {

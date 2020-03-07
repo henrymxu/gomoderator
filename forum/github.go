@@ -23,12 +23,43 @@ type configuration struct {
 }
 
 func (g *Github) GetVotingResolution(comments []*Comment) (string, bool) {
-	return g.resolveVotingMode(comments)
+	votes := make(map[string]int)
+	for _, comment := range comments {
+		if comment.User == g.accountName {
+			reactionsTotal := 0
+			for _, val := range comment.Reactions {
+				reactionsTotal += val
+			}
+			votes[comment.Body] = reactionsTotal
+		}
+	}
+	mostVotes := 0
+	optionsWithMostVotes := make([]string, 0)
+	for option, value := range votes {
+		if value > mostVotes {
+			optionsWithMostVotes = []string{option}
+			mostVotes = value
+		} else if value == mostVotes {
+			optionsWithMostVotes = append(optionsWithMostVotes, option)
+		}
+	}
+	if optionsWithMostVotes == nil || len(optionsWithMostVotes) != 1 {
+		return "", false
+	}
+	return optionsWithMostVotes[0], true
 }
 
 func (g *Github) GetCommentatingResolution(comments []*Comment, resolutions map[string]struct{}, moderators map[string]struct{}) (string, bool) {
-	return g.resolveCommentatingMode(comments, resolutions, moderators)
+	for _, comment := range comments {
+		if _, ok := moderators[comment.User]; ok {
+			if _, ok := resolutions[comment.Body]; ok {
+				return comment.Body, true
+			}
+		}
+	}
+	return "", false
 }
+
 func (g *Github) CloseAction(number int) error {
 	closed := "closed"
 	issueRequest := &github.IssueRequest{
@@ -76,44 +107,6 @@ func (g *Github) GetNewComments(action *Action, timestamp time.Time) ([]*Comment
 func (g *Github) PostComment(body string, id int) error {
 	_, err := g.postComment(body, id)
 	return err
-}
-
-func (g *Github) resolveCommentatingMode(comments []*Comment, resolutions map[string]struct{}, moderators map[string]struct{}) (string, bool) {
-	for _, comment := range comments {
-		if _, ok := moderators[comment.User]; ok {
-			if _, ok := resolutions[comment.Body]; ok {
-				return comment.Body, true
-			}
-		}
-	}
-	return "", false
-}
-
-func (g *Github) resolveVotingMode(comments []*Comment) (string, bool) {
-	votes := make(map[string]int)
-	for _, comment := range comments {
-		if comment.User == g.accountName {
-			reactionsTotal := 0
-			for _, val := range comment.Reactions {
-				reactionsTotal += val
-			}
-			votes[comment.Body] = reactionsTotal
-		}
-	}
-	mostVotes := 0
-	optionsWithMostVotes := make([]string, 0)
-	for option, value := range votes {
-		if value > mostVotes {
-			optionsWithMostVotes = []string{option}
-			mostVotes = value
-		} else if value == mostVotes {
-			optionsWithMostVotes = append(optionsWithMostVotes, option)
-		}
-	}
-	if optionsWithMostVotes == nil || len(optionsWithMostVotes) != 1 {
-		return "", false
-	}
-	return optionsWithMostVotes[0], true
 }
 
 func (g *Github) isAction(issue *github.Issue) bool {

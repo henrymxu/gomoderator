@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	votingMode = "voting"
+	votingMode     = "voting"
 	commentingMode = "commenting"
 )
 
@@ -25,7 +25,7 @@ type Moderator struct {
 	actionCache   map[int64]struct{}
 	actionHandler *ActionHandlerFunc
 	titleFormat   string
-	mode string
+	mode          string
 }
 
 // CreateAction attempts to create a moderator action based on a unique ID.
@@ -82,20 +82,20 @@ func (m *Moderator) StartActionsPollingService() {
 	go m.actionHandlerService()
 }
 
-// actionHandlerService runs the handleNewlyResolvedActions function every N duration
+// actionHandlerService runs the findAndHandleNewlyResolvedActions function every N duration
 // It caches the timestamp of the last runtime in order to improve speed.
 func (m *Moderator) actionHandlerService() {
 	ticker := time.NewTicker(1 * time.Hour)
 	timestamp := time.Unix(0, 0)
 	for ; true; <-ticker.C {
-		m.handleNewlyResolvedActions(timestamp)
+		m.findAndHandleNewlyResolvedActions(timestamp)
 		timestamp = time.Now()
 	}
 }
 
-// handleNewlyResolvedActions synchronously finds all newly resolved actions and
+// findAndHandleNewlyResolvedActions synchronously finds all newly resolved actions and
 // calls the associated handler function.
-func (m *Moderator) handleNewlyResolvedActions(timestamp time.Time) {
+func (m *Moderator) findAndHandleNewlyResolvedActions(timestamp time.Time) {
 	actions, err := (*m.forum).GetActions("open", timestamp)
 	if err != nil {
 		return
@@ -108,14 +108,7 @@ func (m *Moderator) handleNewlyResolvedActions(timestamp time.Time) {
 		if err != nil {
 			continue
 		}
-		var resolution string
-		var ok bool
-		if m.mode == votingMode {
-			resolution, ok = (*m.forum).GetVotingResolution(comments)
-		} else if m.mode == commentingMode {
-			resolution, ok = (*m.forum).GetCommentatingResolution(comments, m.resolutions, m.moderators)
-		}
-		if ok {
+		if resolution, ok := m.getResolution(comments); ok {
 			if m.actionHandler != nil {
 				if err := (*m.forum).CloseAction(action.ID); err == nil {
 					if id, err := parseItemIdFromAction(action.Title, m.titleFormat); err == nil {
@@ -125,6 +118,15 @@ func (m *Moderator) handleNewlyResolvedActions(timestamp time.Time) {
 			}
 		}
 	}
+}
+
+func (m *Moderator) getResolution(comments []*forum.Comment) (string, bool) {
+	if m.mode == votingMode {
+		return (*m.forum).GetVotingResolution(comments)
+	} else if m.mode == commentingMode {
+		return (*m.forum).GetCommentatingResolution(comments, m.resolutions, m.moderators)
+	}
+	return "", false
 }
 
 // parseItemIdFromAction retrieves the item ID from the title of the post.
