@@ -5,6 +5,7 @@ import (
 	"github.com/henrymxu/gomoderator/forum"
 	"golang.org/x/net/context"
 	"strings"
+	"time"
 )
 
 type Builder struct {
@@ -14,6 +15,7 @@ type Builder struct {
 	actionHandler *ActionHandlerFunc
 	resolutions []string
 	mode string
+	frequency *time.Duration
 }
 
 func NewModeratorBuilder() *Builder {
@@ -56,6 +58,10 @@ func (m *Builder) RegisterActionHandler(handler ActionHandlerFunc) {
 	m.actionHandler = &handler
 }
 
+func (m *Builder) SetPollingFrequency(frequency time.Duration) {
+	m.frequency = &frequency
+}
+
 func (m *Builder) BuildModerator() (*Moderator, error) {
 	if m.titleFormat == "" {
 		return nil, errors.New("moderator must contain a title format")
@@ -71,6 +77,10 @@ func (m *Builder) BuildModerator() (*Moderator, error) {
 	}
 	if m.mode == "" {
 		return nil, errors.New("moderator must specify a mode")
+	}
+	if m.frequency == nil {
+		defaultFrequency := 1 * time.Hour
+		m.frequency = &defaultFrequency
 	}
 	return buildModerator(m)
 }
@@ -96,6 +106,7 @@ func buildModerator(builder *Builder) (*Moderator, error) {
 		resolutions: resolutionsMap,
 		actionHandler: builder.actionHandler,
 		titleFormat: builder.titleFormat,
+		pollingFrequency: *builder.frequency,
 	}
 	return &moderator, nil
 }

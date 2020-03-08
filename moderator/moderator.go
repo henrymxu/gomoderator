@@ -26,6 +26,7 @@ type Moderator struct {
 	actionHandler *ActionHandlerFunc
 	titleFormat   string
 	mode          string
+	pollingFrequency time.Duration
 }
 
 // CreateAction attempts to create a moderator action based on a unique ID.
@@ -85,7 +86,7 @@ func (m *Moderator) StartActionsPollingService() {
 // actionHandlerService runs the findAndHandleNewlyResolvedActions function every N duration
 // It caches the timestamp of the last runtime in order to improve speed.
 func (m *Moderator) actionHandlerService() {
-	ticker := time.NewTicker(1 * time.Hour)
+	ticker := time.NewTicker(m.pollingFrequency)
 	timestamp := time.Unix(0, 0)
 	for ; true; <-ticker.C {
 		m.findAndHandleNewlyResolvedActions(timestamp)

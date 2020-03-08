@@ -30,6 +30,16 @@ needs to be taken.  Forums must be able to support and be able to provide throug
 
 Forums will be provided to the `moderator` through a builder interface that can be found in `forum/forum.go`
 
+#### Example Setup
+
+```
+githubBuilder := forum.NewGithubBuilder()
+githubBuilder.AccessToken = os.Getenv("GITHUB_ACCESS_TOKEN")
+githubBuilder.AccountName = "moderatorbot"
+githubBuilder.RepositoryOwner = "henrymxu"
+githubBuilder.RepositoryName = "gomoderator"
+```
+
 ### Moderator
 
 The moderator is the service that will post, identify, and resolve actions.  The moderator provides the following commands:
@@ -39,11 +49,39 @@ The moderator is the service that will post, identify, and resolve actions.  The
 - StartActionsPollingService
 - FindAndHandleNewlyResolvedActions
 
+#### Example Setup
+
+```
+builder := moderator.NewModeratorBuilder()
+builder.SetForumBuilder(githubBuilder)
+builder.SetModerators("henrymxu")
+err := builder.SetResolutions("keep", "remove")
+builder.RegisterActionHandler(actionHandler)
+builder.SetModeToCommenting()
+err = builder.SetTitleFormat("Action required for %d")
+mod, err := builder.BuildModerator()
+
+...
+
+func actionHandler(id int64, resolution string) {
+	fmt.Printf("Handling action for %d with resolution %s\n", id, resolution)
+}
+```
+
 ### CreateAction
 
 The moderator will create an action on the provided forum (e.g create an issue on github) with the provided details.
 All actions must have an associated unique ID related to the item they are actioning on (e.g if a post requires action, the unique ID representing the post).
 If an action with the same item ID already exists, the moderator will not create a new action.
+
+#### Example
+
+```
+err = mod.CreateAction(27, "Test Issue using GoModerator")
+if err != nil {
+	...
+}
+```
 
 ### FindAndHandleNewlyResolvedActions
 
@@ -51,7 +89,13 @@ The moderator will go through the current unresolved actions and identify the on
 If the resolution is valid, the moderator will mark the action as closed, and invoke the provided callback with the identified resolution.
 This method can be ran as a service with a custom polling frequency through the `StartActionsPollingService` method.
 
-## Forums
+#### Example
+
+```
+mod.StartActionsPollingService()
+```
+
+## Forum Configuration
 
 ### Github
 
