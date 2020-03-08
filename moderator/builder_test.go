@@ -85,4 +85,9 @@ func TestBuilder_BuildModeratorFail(t *testing.T) {
 	if err == nil {
 		t.Error(err)
 	}
+	builder.SetModeToCommenting()
+	_, err = builder.BuildModerator()
+	if err != nil {
+		t.Error(err)
+	}
 }
