@@ -83,6 +83,10 @@ func (m *Moderator) StartActionsPollingService() {
 	go m.actionHandlerService()
 }
 
+func (m *Moderator) RegisterActionHandler(handlerFunc ActionHandlerFunc) {
+	m.actionHandler = &handlerFunc
+}
+
 // actionHandlerService runs the findAndHandleNewlyResolvedActions function every N duration
 // It caches the timestamp of the last runtime in order to improve speed.
 func (m *Moderator) actionHandlerService() {

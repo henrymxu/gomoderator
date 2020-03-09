@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func ExampleModerator_DoesActionAlreadyExist() {
+func main() {
 	githubBuilder := forum.NewGithubBuilder()
 	githubBuilder.AccessToken = os.Getenv("GITHUB_ACCESS_TOKEN")
 	githubBuilder.AccountName = "henrymxu"
