@@ -97,10 +97,7 @@ func (g *Github) GetActions(state string, timestamp time.Time) ([]*Action, error
 }
 
 func (g *Github) GetNewComments(action *Action, prevTime time.Time) ([]*Comment, error) {
-	options := &github.IssueListCommentsOptions{
-		Since: &prevTime,
-	}
-	comments, _, err := g.client.Issues.ListComments(g.ctx, g.owner, g.repo, action.ID, options)
+	comments, _, err := g.client.Issues.ListComments(g.ctx, g.owner, g.repo, action.ID, nil)
 	return convertIssueCommentsToComment(comments), err
 }
 
