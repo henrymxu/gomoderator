@@ -7,8 +7,7 @@ import (
 	"os"
 )
 
-func main() {
-	//githubBuilder, _ := forum.InitializeGithubBuilderFromConfig("src/github.com/henrymxu/gomoderator/config.toml")
+func ExampleModerator_DoesActionAlreadyExist() {
 	githubBuilder := forum.NewGithubBuilder()
 	githubBuilder.AccessToken = os.Getenv("GITHUB_ACCESS_TOKEN")
 	githubBuilder.AccountName = "henrymxu"
@@ -24,16 +23,10 @@ func main() {
 	_ = builder.SetTitleFormat("Action required for %d")
 	mod, err := builder.BuildModerator()
 	if err != nil {
-		fmt.Println(err)
 		panic(err)
 	}
 	fmt.Println(mod.DoesActionAlreadyExist(0))
-	//err = mod.CreateAction(1, "Test Issue for GoSports using GoModerator")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	panic(err)
-	//}
-	mod.StartActionsPollingService()
+	// Output: true
 }
 
 func actionHandler(id int64, resolution string) {
