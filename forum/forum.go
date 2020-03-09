@@ -12,8 +12,8 @@ type Forum interface {
 	GetCommentatingResolution(comments []*Comment, resolutions map[string]struct{}, moderators map[string]struct{}) (string, bool)
 	CloseAction(number int) error
 	CreateAction(action *Action) (int, error)
-	GetActions(state string, timestamp time.Time) ([]*Action, error)
-	GetNewComments(action *Action, timestamp time.Time) ([]*Comment, error)
+	GetActions(state string, prevTime time.Time) ([]*Action, error)
+	GetNewComments(action *Action, prevTime time.Time) ([]*Comment, error)
 	PostComment(body string, id int) error
 }
 

@@ -96,9 +96,9 @@ func (g *Github) GetActions(state string, timestamp time.Time) ([]*Action, error
 	return actions, nil
 }
 
-func (g *Github) GetNewComments(action *Action, timestamp time.Time) ([]*Comment, error) {
+func (g *Github) GetNewComments(action *Action, prevTime time.Time) ([]*Comment, error) {
 	options := &github.IssueListCommentsOptions{
-		Since: &timestamp,
+		Since: &prevTime,
 	}
 	comments, _, err := g.client.Issues.ListComments(g.ctx, g.owner, g.repo, action.ID, options)
 	return convertIssueCommentsToComment(comments), err
@@ -130,7 +130,7 @@ func (g *Github) postComment(contents string, issueNumber int) (*github.IssueCom
 	return res, err
 }
 
-func (g *Github) getActions(filterState string, pageNumber int, timestamp time.Time) ([]*github.Issue, error) {
+func (g *Github) getActions(filterState string, pageNumber int, prevTime time.Time) ([]*github.Issue, error) {
 	options := &github.IssueListByRepoOptions{
 		Creator: g.accountName,
 		Sort:    IssueSort,
@@ -139,7 +139,7 @@ func (g *Github) getActions(filterState string, pageNumber int, timestamp time.T
 			PerPage: MaxPageSize,
 			Page:    pageNumber,
 		},
-		Since: timestamp,
+		Since: prevTime,
 	}
 	issues, _, err := g.client.Issues.ListByRepo(g.ctx, g.owner, g.repo, options)
 	return issues, err
